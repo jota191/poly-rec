@@ -17,18 +17,19 @@ Let us define records as a (partial) mapping from names (fields, wich
 are static) to values.
 
 There are many implementations out there. This is yet another one,
-inspired in the HList library. Before, we depended on it. Then we
-choose to implement a record library from scratch for two reasons:
+inspired in the HList library. It arose when programming the AspectAG
+library.  Before, we depended on HList. Then we choose to implement a
+record library from scratch for two reasons:
 
  * HList is experimental, it does not maintain a stable interface.
  * We prefer a solution that fits better in our use case.
 
-AspectAG is a library to encode type safe attribute
-grammars. Statically checked extensible records are used everywhere,
-knowing at compile time the structure of the grammar, and checking if
-it is well-formed.
+AspectAG is a library to encode type safe attribute grammars.
+Statically checked extensible records are used everywhere, knowing at
+compile time the structure of the grammar, and checking if it is
+well-formed.
 
-Some example structures in our library are:
+Some example structures in AspectAG library are:
 
 * Records: that's it, plane extensible records: Mappings from names to
   values.
@@ -95,7 +96,8 @@ module Data.GenRecord
     OpExtend,
     -- extend, TODO
     OpUpdate,
-    update
+    update,
+    emptyRecord
     
   ) where
 
@@ -103,6 +105,7 @@ import Data.Kind
 import Data.Proxy
 import Data.GenRecord.Label
 import Data.Type.Require
+import Prelude hiding (lookup)
 
 import GHC.TypeLits
 
@@ -117,12 +120,15 @@ type family a == b where
 -- from labels to values.  Labels are of kind `k'`. Values are still
 -- polykinded (`k''`) since rich information can be statically
 -- represented here (for instance, when a record of records, or a
--- record of Vectors is represented).  `k'` must implement the 'CMP'
+-- record of Vectors is represented).  `k'` must implement the `Cmp`
 -- family, although it is not visible here for simplicity. Records are
--- built putting fields ordered according to the `CMP` result of its
--- labels. __This is not intended to be used to build records__, use
--- the smart constructors 'emptyRecord' and '(.*.)' instead. We export
--- the constructors to pattern match on them.
+-- built putting fields ordered according to the `Cmp` result of its
+-- labels. __This constructors are not intended to be used to build__
+-- __records__, (`ConsRec` is the problematic one). Use the smart
+-- constructors `emptyRecord` and `.*.` instead. We export the
+-- constructors to pattern match on them. Although there are solutions
+-- to hide Constructors while supporting pattern matching, we kept
+-- it simple
 
 data Rec (c :: k) (r :: [(k', k'')]) :: Type where
   EmptyRec :: Rec c '[] -- ^ empty record
@@ -130,24 +136,41 @@ data Rec (c :: k) (r :: [(k', k'')]) :: Type where
 -- `ConsRec` takes a tagged field (`TagField`) and a record, to build
 -- a new record. Recall that fields should be ordered.
 
+-- | The empty Record. Note that it is polymorphic on the kind of record `c`.
+emptyRecord = EmptyRec
+
 -- | 'TagField'
-data TagField (cat :: k) (l :: k') (v :: k'') where
-  TagField :: Label c -> Label l -> WrapField c v -> TagField c l v
+data TagField (c :: k) (l :: k') (v :: k'') where
+  TagField :: Label c -> Label l -> WrapField c v -> TagField c l v -- ^
+-- `TagField` tags a value `v` with record and label information. `v`
+-- is polykinded, for instance we could be tagging some kind of
+-- record, because then we would build a matrix. In that case 'k''
+-- could be something as `[(kindforlabels, Type)]`. But `TagField`
+-- contains inhabited values, it tags values of a type of kind `Type`.
+-- In this example perhaps some value of
+-- type `Rec Something [(kindforlabels, Type)]`.
+-- That is the role of the `WrapField` family. Given `c`, the kind of
+-- record, and `v`, ir computes the wrapper.
 
 -- | TagField operator, note that 'c' will be ambiguous if not annotated.
 (l :: Label l) .=. (v :: v) = TagField Label l v
 
-type family  WrapField (c :: k')  (v :: k)
 
+-- | Given a type of record and its index, it computes the type of
+-- record inhabitants
+type family  WrapField (c :: k')  (v :: k) :: Type
+
+
+-- | The inverse of `WrapField`
 type family UnWrap (t :: Type) :: [(k,k')]
 type instance UnWrap (Rec c (r :: [(k, k')])) = (r :: [(k, k')])
 
-
+-- | This is the destructor of `TagField`. Note the use of `WrapField` here.
 untagField :: TagField c l v -> WrapField c v
 untagField (TagField lc lv v) = v
 
 -- | comparisson of Labels, this family is polykinded, each record-like
--- structure must implement this family for labels
+-- structure must implement this family for its labels
 type family Cmp (a :: k) (b :: k) :: Ordering
 
 -- | Instance for Symbols
@@ -304,10 +327,19 @@ instance (Require (OpError (Text "field not Found on " :<>: Text (ShowRec c)
     ()
   req = undefined
 
-
+-- | The update function. Given a `Label` and value, and a `Record`
+-- containing this label, it updates the value. It could change its
+-- type. It raises a custom type error if there is no field
+-- labelled with l.
 update (l :: Label l) (v :: v) (r :: Rec c r) =
   req Proxy (OpUpdate @l @c @v @r l v r)
 
+
+-- | The lookup function. Given a `Label` and a `Record`, it returns
+-- the field at that position. It raises a custom type
+-- error if there is no field labelled with l.
+lookup (l :: Label l) (r :: Rec c r) =
+  req Proxy (OpLookup @c @l @r l r)
 
 -- ** Extension
 
@@ -380,7 +412,8 @@ instance
 
 
 infixr 2 .*.
--- | operator
+-- | Extend operator. This should be used to extend records. if the
+-- record has a field with the same name, it raises a custom type error.
 (TagField c l v) .*. r = req Proxy (OpExtend l v r)
 
 
