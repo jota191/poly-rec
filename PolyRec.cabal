@@ -16,8 +16,10 @@ extra-source-files:  CHANGELOG.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules: Data.GenRecord,
-                   Data.GenRecord.Label
+  exposed-modules: Data.GenRec,
+                   Data.GenRec.Label,
+                   Data.GenRec.RecInstances.Record
+                   
   -- other-modules:
   -- other-extensions:
   build-depends:       Require >= 0.6.0.0,
