@@ -89,13 +89,14 @@ module Data.GenRec
     Cmp,
     ShowRec,
     ShowField,
-    OpLookup,
+    OpLookup(OpLookup),
     lookup,
-    OpExtend,
+    OpExtend(OpExtend),
     -- extend, TODO
-    OpUpdate,
+    OpUpdate(OpUpdate),
     update,
-    emptyGenRec
+    emptyGenRec,
+    module Data.GenRec.Label
   ) where
 
 import Data.Kind
