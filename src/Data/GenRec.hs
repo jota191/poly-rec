@@ -83,9 +83,9 @@ module Data.GenRec
     WrapField,
     UnWrap,
     untagField,
-    (.==.),
-    (##),
-    (.**.),
+    (.=.),
+    (#),
+    (.*.),
     Cmp,
     ShowRec,
     ShowField,
@@ -152,8 +152,8 @@ data TagField (c :: k) (l :: k') (v :: k'') where
 
 
 -- | TagField operator, note that 'c' will be ambiguous if not annotated.
-infix 4 .==.
-(l :: Label l) .==. (v :: v) = TagField Label l v
+infix 4 .=.
+(l :: Label l) .=. (v :: v) = TagField Label l v
 
 
 -- | Given a type of record and its index, it computes the type of
@@ -252,9 +252,9 @@ instance Require (OpError (Text "field not Found on " :<>: Text (ShowRec c)
   req ctx (OpLookup' Proxy l (ConsRec _ r)) = ()
 
 -- | Pretty lookup
-(##) :: RequireR (OpLookup c l r) '[] v =>
+(#) :: RequireR (OpLookup c l r) '[] v =>
   Rec c r -> Label l -> v
-r ## l = req (Proxy @ '[]) (OpLookup l r)
+r # l = req (Proxy @ '[]) (OpLookup l r)
 
 
 -- ** update
@@ -410,7 +410,7 @@ instance
   req ctx = undefined
 
 
--- | '.**.' the pretty cons, hiding require
-infixr 2 .**.
-(TagField c l v :: TagField c l v) .**. (r :: Rec c r) =
+-- | '.*.' the pretty cons, hiding require
+infixr 2 .*.
+(TagField c l v :: TagField c l v) .*. (r :: Rec c r) =
   req emptyCtx (OpExtend @l @c @v @r l v r)

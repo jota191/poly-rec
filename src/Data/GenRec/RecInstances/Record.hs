@@ -22,7 +22,7 @@
 module Data.GenRec.RecInstances.Record
   (Record, Reco,
    untag, getLabel,
-   (.=.), (.*.), (#),
+   (.==.), (.**.), (##),
    emptyRecord
   )
   where
@@ -58,9 +58,9 @@ pattern Tagged v = TagField Label Label v
 -- ** Constructors
 
 -- | Pretty Constructor
-infix 4 .=.
-(.=.) :: Label l -> v -> Tagged l v
-l .=. v = Tagged v
+infix 4 .==.
+(.==.) :: Label l -> v -> Tagged l v
+l .==. v = Tagged v
 
 -- | For the empty Record
 emptyRecord :: Record ('[] :: [(Symbol, Type)])
@@ -75,12 +75,12 @@ getLabel :: Tagged l v -> Label l
 getLabel _ = Label
 
 -- | Lookup
-infixl 5 #
-r # (l :: Label l) = (##) @Reco @l r l
+infixl 5 ##
+r ## (l :: Label l) = (#) @Reco @l r l
 
 -- | extension
-infixr 2 .*.
-(lv :: Tagged l v) .*. r = (.**.)  lv r
+infixr 2 .**.
+(lv :: Tagged l v) .**. r = (.*.)  lv r
 -- The Tagged annotation is enough to unify everything
 
 instance ( Show v
@@ -111,6 +111,6 @@ instance ( Show v
     let ('{':shr) = show r
     in '{' : show lv ++ ", " ++ shr
 
-v1 = (Label @"boolean" .=. True) .*. emptyRecord
-v2 = (Label @"integer" .=. 3) .*. v1
-v3 = (Label @"text" .=. "wa") .*. v2
+v1 = (Label @"boolean" .==. True) .**. emptyRecord
+v2 = (Label @"integer" .==. 3) .**. v1
+v3 = (Label @"text" .==. "wa") .**. v2
