@@ -70,9 +70,9 @@ true  = reco # label1
 anInt = reco # label4
 
 -- -- update tests
--- t1 = update label2 'a' reco
--- t2 = update label4 'a' reco
--- --t3 = update label5 True reco
+t1 = update label2 Proxy 'a' reco
+t2 = update label4 Proxy 'a' reco
+-- t3 = update label5 Proxy True reco
 -- --t4 = update label3 True reco
 
 

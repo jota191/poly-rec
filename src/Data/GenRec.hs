@@ -102,8 +102,6 @@ module Data.GenRec
 
 import Data.Kind
 import Data.Proxy
----import Data.GenRec.Label
-import Data.Type.Require
 import Prelude hiding (lookup)
 
 import GHC.TypeLits
@@ -178,13 +176,6 @@ type instance UnWrap (Rec c (r :: [(k, k')])) = (r :: [(k, k')])
 untagField :: TagField c l v -> WrapField c v
 untagField (TagField lc lv v) = v
 
--- -- | comparisson of Labels, this family is polykinded, each record-like
--- -- structure must implement this family for its labels
--- type family Cmp (a :: k) (b :: k) :: Ordering
-
--- -- | Instance for Symbols
--- type instance Cmp (a :: Symbol) (b :: Symbol) = CmpSymbol a b
-
 
 -- | Function to show the name of records (Record, Mapping, etc):
 type family ShowRec c :: Symbol
@@ -227,100 +218,30 @@ type family Update (c :: cat) (l :: lk) (v :: vk) (r::[(lk, fk)]) :: [(lk, fk)]
                  ('(l',v') ': Update c l v r)
 
 update :: forall cat lk fk (c :: cat) (l :: lk) (v :: fk) (r :: [(lk, fk)]).
-  SOrd lk => Label l -> WrapField c v -> Rec c r -> Rec c (Update c l v r)
-update l v EmptyRec = sUndefined
-update l v (ConsRec lv@(TagField c l' v') r) =
+  SOrd lk => Label l -> Proxy v -> WrapField c v -> Rec c r
+  -> Rec c (Update c l v r)
+update l proxyv v EmptyRec = sUndefined
+update l proxyv v (ConsRec lv@(TagField c l' v') r) =
   case sCompare l l' of
     SLT -> sUndefined
     SEQ -> ConsRec (TagField c l v) r
-    SGT -> ConsRec lv $ update l (v :: WrapField c v) r
+    SGT -> ConsRec lv $ update l proxyv v r
 
-{-
--- | The update function. Given a `Label` and value, and a `Record`
--- containing this label, it updates the value. It could change its
--- type. It raises a custom type error if there is no field
--- labelled with l.
-update (l :: Label l) (v :: v) (r :: Rec c r) =
-  req Proxy (OpUpdate @l @c @v @r l v r)
+type family Extend (c :: cat) (l :: lk) (v :: vk) (r::[(lk, fk)]) :: [(lk, fk)]
+ where
+  Extend c l v '[] = '[ '(l, v)]
+  Extend c l v ('(l',v') ': r) =
+    FoldOrdering (Compare l l')
+                 ('(l,v) ': '(l',v') ': r)
+                 (TypeError (Text "TODO: extend Error"))
+                 ('(l',v') ': Extend c l v r)
 
--- | The lookup function. Given a `Label` and a `Record`, it returns
--- the field at that position. It raises a custom type
--- error if there is no field labelled with l.
-lookup (l :: Label l) (r :: Rec c r) =
-  req Proxy (OpLookup @c @l @r l r)
-
--- ** Extension
-
--- | extension operator (wrapper)
-data OpExtend (c :: Type)
-              (l  :: k)
-              (v  :: k')
-              (r  :: [(k, k')]) :: Type where
-  OpExtend :: Label l -> WrapField c v -> Rec c r
-           -> OpExtend c l v r
-
--- | Extension operator (inner)
-data OpExtend' (b   :: Ordering)
-               (c   :: Type)
-               (l   :: k)
-               (v   :: k')
-               (r   :: [(k, k')]) :: Type where
-  OpExtend' :: Proxy b -> Label l -> WrapField c v -> Rec c r
-           -> OpExtend' b c l v r
-
--- | extending an empty record
-instance
-  Require (OpExtend c l v '[]) ctx where
-  type ReqR (OpExtend c l v '[]) =
-    Rec c '[ '(l , v)]
-  req ctx (OpExtend l v EmptyRec) =
-    ConsRec (TagField (Label @c) l v) EmptyRec
-
--- | wrapper instance
-
-instance
-  Require (OpExtend' (Cmp l l') c l v ('(l', v') : r)) ctx
-  =>
-  Require (OpExtend c l v ( '(l', v') ': r)) ctx where
-  type ReqR (OpExtend c l v ( '(l', v') ': r)) =
-    ReqR (OpExtend' (Cmp l l') c l v ( '(l', v') ': r))
-  req ctx (OpExtend l v (r :: Rec c ( '(l', v') ': r)) ) =
-    req ctx (OpExtend' @(Cmp l l') @l @c @v Proxy l v r)
-
--- | keep looking
-instance
-  (Require (OpExtend c l v r) ctx
-  , ( '(l', v') ': r0 ) ~ a
-  , ReqR (OpExtend c l v r) ~ Rec c r0
-  )
-  =>
-  Require (OpExtend' 'GT c l v ( '(l', v') ': r)) ctx where
-  type ReqR (OpExtend' 'GT c l v ( '(l', v') ': r)) =
-    Rec c ( '(l', v') ': UnWrap (ReqR (OpExtend c l v r)))
-  req ctx (OpExtend' Proxy l v (ConsRec lv r)) =
-    ConsRec lv $ req ctx (OpExtend @_ @_ @v l v r)
-
-instance
-  Require (OpExtend' 'LT c l v ( '(l', v') ': r)) ctx where
-  type ReqR (OpExtend' 'LT c l v ( '(l', v') ': r)) =
-    Rec c ( '(l, v) ': ( '(l', v') ': r))
-  req ctx (OpExtend' Proxy l v r) =
-    ConsRec (TagField Label l v) r
-
-instance
-  (Require (OpError (Text "cannot extend " :<>: Text (ShowRec c)
-                     -- :<>: Text " because the label (" :<>: ShowT l
-                     -- :<>: Text ") already exists"
-                    :$$: Text "colision in " :<>: Text (ShowField c)
-                     :<>: Text " ":<>: ShowTE l)) ctx)
-  =>
-  Require (OpExtend' 'EQ c l v ( '(l, v') ': r)) ctx where
-  type ReqR (OpExtend' 'EQ c l v ( '(l, v') ': r)) = ()
-  req ctx = undefined
-
-
--- | '.*.' the pretty cons, hiding require
 infixr 2 .*.
-(TagField c l v :: TagField c l v) .*. (r :: Rec c r) =
-  req emptyCtx (OpExtend @l @c @v @r l v r)
--}
+(.*.) :: forall cat lk fk (c :: cat) (l :: lk) (v :: fk) (r :: [(lk, fk)]).
+  SOrd lk => TagField c l v -> Rec c r -> Rec c (Extend c l v r)
+tf .*. EmptyRec = ConsRec tf EmptyRec
+lv@(TagField _ l v) .*. re@(ConsRec lv'@(TagField _ l' v') r) =
+  case sCompare l l' of
+    SLT -> ConsRec lv re
+    SEQ -> sUndefined
+    SGT -> ConsRec lv' $ lv .*. r

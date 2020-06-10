@@ -31,7 +31,13 @@ import GHC.TypeLits
 import Data.Kind
 import Data.Proxy
 import Data.GenRec
-import Data.GenRec.Label
+
+import Data.Type.Bool
+import Data.Type.Equality
+import Data.Singletons
+import Data.Singletons.TH
+import Data.Singletons.TypeLits
+import Data.Singletons.Prelude.Ord
 
 
 -- | * Records
@@ -51,32 +57,32 @@ type instance ShowField Reco       = "field named "
 
 
 type Tagged (l :: Symbol) (v :: Type) = TagField Reco l v
-pattern Tagged :: v -> Tagged l v
-pattern Tagged v = TagField Label Label v
+pattern Tagged :: (KnownSymbol l) => v -> Tagged l v
+pattern Tagged v = TagField Proxy SSym v
 
 
 -- ** Constructors
 
 -- | Pretty Constructor
 infix 4 .==.
-(.==.) :: Label l -> v -> Tagged l v
+(.==.) :: KnownSymbol l => Label l -> v -> Tagged l v
 l .==. v = Tagged v
 
 -- | For the empty Record
 emptyRecord :: Record ('[] :: [(Symbol, Type)])
 emptyRecord = EmptyRec
 
-untag :: Tagged l v -> v
+untag :: (KnownSymbol l) => Tagged l v -> v
 untag (TagField _ _ v) = v
 
 -- * Destructors
 -- | Get a label
-getLabel :: Tagged l v -> Label l
-getLabel _ = Label
+getLabel :: (KnownSymbol l) =>  Tagged l v -> Label l
+getLabel (TagField _ l _) = l
 
 -- | Lookup
 infixl 5 ##
-r ## (l :: Label l) = (#) @Reco @l r l
+r ## (l :: Label l) = (#) @Reco r l
 
 -- | extension
 infixr 2 .**.
@@ -87,8 +93,8 @@ instance ( Show v
          , KnownSymbol l )
   =>
   Show (Tagged l v) where
-  show (Tagged v :: TagField Reco l v) =
-    symbolVal (proxyFrom (Label @ l)) ++ " : "++ show v
+  show (TagField _ l v :: TagField Reco l v) =
+    show (fromSing l) ++ " : "++ show v
      where proxyFrom :: Label l -> Proxy l
            proxyFrom _ = Proxy
 
@@ -111,6 +117,6 @@ instance ( Show v
     let ('{':shr) = show r
     in '{' : show lv ++ ", " ++ shr
 
-v1 = (Label @"boolean" .==. True) .**. emptyRecord
-v2 = (Label @"integer" .==. 3) .**. v1
-v3 = (Label @"text" .==. "wa") .**. v2
+v1 = (SSym @"boolean" .==. True) .**. emptyRecord
+v2 = (SSym @"integer" .==. 3) .**. v1
+v3 = (SSym @"text" .==. "wa") .**. v2
