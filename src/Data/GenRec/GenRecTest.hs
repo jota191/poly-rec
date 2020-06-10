@@ -23,18 +23,25 @@ module Data.GenRecord.GenRecordTest where
 import Data.Kind
 import Data.Proxy
 import Data.GenRec
-import Data.GenRec.Label
+--import Data.GenRec.Label
+import GHC.TypeLits
+import Data.Type.Bool
+import Data.Type.Equality
+import Data.Singletons
+import Data.Singletons.TH
+import Data.Singletons.TypeLits
+import Data.Singletons.Prelude.Ord
 
 
 import GHC.TypeLits
 
 emp = EmptyRec :: Record '[]
 
-label1 = Label @ "l1"
-label2 = Label @ "l2"
-label3 = Label @ "l3"
-label4 = Label @ "l4"
-label5 = Label @ "l5"
+label1 = SSym @ "l1"
+label2 = SSym @ "l2"
+label3 = SSym @ "l3"
+label4 = SSym @ "l4"
+label5 = SSym @ "l5"
 
 -- let us define simple records:
 
@@ -46,7 +53,7 @@ type instance ShowField Reco = "field named:"
 type Record (r :: [(Symbol, Type)]) = Rec Reco r
 
 tagField :: Label l -> v -> TagField Reco l v
-tagField l v = TagField Label Label v
+tagField l v = TagField undefined l v
 
 reco = -- "handmade" record, note labels in order
     ConsRec (tagField label1 True)
@@ -57,22 +64,22 @@ reco = -- "handmade" record, note labels in order
 
 -- lookup tests
 
-true  = reco ## label1
+true  = reco # label1
 -- boom  = reco ## label3 -- should have a nice error message
 -- boom2 = reco ## label5 -- should have a nice error message
-anInt = reco ## label4
+anInt = reco # label4
 
--- update tests
-t1 = update label2 'a' reco
-t2 = update label4 'a' reco
---t3 = update label5 True reco
---t4 = update label3 True reco
+-- -- update tests
+-- t1 = update label2 'a' reco
+-- t2 = update label4 'a' reco
+-- --t3 = update label5 True reco
+-- --t4 = update label3 True reco
 
 
--- extend
--- boom1 = tagField label1 () .**. reco
-e2 = tagField label3 () .**. reco
--- boom3 = tagField label4 () .**. reco
+-- -- extend
+-- -- boom1 = tagField label1 () .**. reco
+-- e2 = tagField label3 () .**. reco
+-- -- boom3 = tagField label4 () .**. reco
 
 
 instance Show (Record '[]) where
