@@ -114,7 +114,7 @@ import Data.Singletons.Prelude.Ord
 
 
 import GHC.TypeLits
-
+import GHC.Exts (Any)
 
 
 -- | Record data structure for generic records (Internal). The `c`
@@ -245,3 +245,4 @@ lv@(TagField _ l v) .*. re@(ConsRec lv'@(TagField _ l' v') r) =
     SLT -> ConsRec lv re
     SEQ -> sUndefined
     SGT -> ConsRec lv' $ lv .*. r
+
