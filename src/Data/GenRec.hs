@@ -192,12 +192,23 @@ type family FoldOrdering (cond :: Ordering)
 
 type family Lookup (c :: cat) (l :: lk) (r :: [(lk, vk)])
  where
-  Lookup c l '[] = TypeError (Text "TODO: lookup error")
+  Lookup c l '[] = TypeError (LookupError c l '[])
   Lookup c l ('(l', v) ': r ) =
     FoldOrdering (Compare l l')
-                 (TypeError (Text "TODO: lookup error"))
+                 (TypeError (LookupError c l ('(l', v) ': r ))) 
                  v
                  (Lookup c l r)
+-- | Show for types
+type family ShowTE (t :: k) :: ErrorMessage
+type instance ShowTE (t :: Type) = ShowType t
+type instance ShowTE (t :: Symbol) = Text t 
+
+type family LookupError (c :: cat) (l :: lk) (r :: [(lk, vk)]) :: ErrorMessage
+type instance LookupError c l r  =
+  (Text "field not Found on " :<>: Text (ShowRec c)
+   :$$: Text "looking up the " :<>: Text (ShowField c)
+   :<>: Text " " :<>: ShowTE l
+   :$$: Text "in the structure " :<>: ShowType r)
 
 (#) :: forall cat lk fk (c :: cat) (r :: [(lk, fk)]) (l :: lk).
          SOrd lk => Rec c r -> Label l -> WrapField c (Lookup c l r)
