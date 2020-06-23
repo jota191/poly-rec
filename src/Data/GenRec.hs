@@ -117,6 +117,11 @@ import GHC.TypeLits
 import GHC.Exts (Any)
 
 
+type family Cmp (a :: k) (b :: k') :: Ordering where
+  Cmp a a = 'EQ
+  Cmp x y = Compare x y
+
+
 -- | Record data structure for generic records (Internal). The `c`
 -- index indicates the kind of record (for each record instance, the
 -- user should define an index). The `r` index represents the mapping
