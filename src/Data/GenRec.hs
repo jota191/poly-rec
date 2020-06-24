@@ -77,27 +77,21 @@ corresponding to the record fields.
 #-}
 
 module Data.GenRec
-  -- (
-  --   Rec(ConsRec, EmptyRec),
-  --   TagField(TagField),
-  --   WrapField,
-  --   UnWrap,
-  --   untagField,
-  --   (.=.),
-  --   (#),
-  --   (.*.),
-  --   Cmp,
-  --   ShowRec,
-  --   ShowField,
-  --   OpLookup(OpLookup),
-  --   lookup,
-  --   OpExtend(OpExtend),
-  --   -- extend, TODO
-  --   OpUpdate(OpUpdate),
-  --   update,
-  --   emptyGenRec,
-  --   module Data.GenRec.Label
-  -- ) 
+  (
+    Rec(ConsRec, EmptyRec),
+    TagField(TagField),
+    WrapField,
+    UnWrap,
+    untagField,
+    (.=.),
+    (#),
+    (.*.),
+    ShowRec,
+    ShowField,
+    update,
+    emptyGenRec,
+    module Data.GenRec.Label
+  ) 
   where
 
 import Data.Kind

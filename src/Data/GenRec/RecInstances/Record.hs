@@ -34,10 +34,10 @@ import Data.GenRec
 
 import Data.Type.Bool
 import Data.Type.Equality
+
 import Data.Singletons
 import Data.Singletons.TH
 import Data.Singletons.TypeLits
-import Data.Singletons.Prelude.Ord
 
 
 -- | * Records
