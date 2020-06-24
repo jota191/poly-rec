@@ -115,7 +115,7 @@ import Data.Singletons.Prelude.Ord
 
 import GHC.TypeLits
 import GHC.Exts (Any)
-
+import Data.Type.Require
 
 type family Cmp (a :: k) (b :: k') :: Ordering where
   Cmp a a = 'EQ
@@ -203,10 +203,6 @@ type family Lookup (c :: cat) (l :: lk) (r :: [(lk, vk)])
                  (TypeError (LookupError c l ('(l', v) ': r ))) 
                  v
                  (Lookup c l r)
--- | Show for types
-type family ShowTE (t :: k) :: ErrorMessage
-type instance ShowTE (t :: Type) = ShowType t
-type instance ShowTE (t :: Symbol) = Text t 
 
 type family LookupError (c :: cat) (l :: lk) (r :: [(lk, vk)]) :: ErrorMessage
 type instance LookupError c l r  =
