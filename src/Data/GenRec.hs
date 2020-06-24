@@ -109,18 +109,12 @@ import Data.Type.Bool
 import Data.Type.Equality
 import Data.Singletons
 import Data.Singletons.TH
-import Data.Singletons.TypeLits
-import Data.Singletons.Prelude.Ord
-
 
 import GHC.TypeLits
 import GHC.Exts (Any)
 import Data.Type.Require
 
-type family Cmp (a :: k) (b :: k') :: Ordering where
-  Cmp a a = 'EQ
-  Cmp x y = Compare x y
-
+import Data.GenRec.Label
 
 -- | Record data structure for generic records (Internal). The `c`
 -- index indicates the kind of record (for each record instance, the
@@ -138,7 +132,6 @@ type family Cmp (a :: k) (b :: k') :: Ordering where
 -- to hide Constructors while supporting pattern matching, we kept
 -- it simple
 
-type Label l = Sing l
 
 data Rec (c :: k) (r :: [(k', k'')]) :: Type where
   EmptyRec :: Rec c '[] -- ^ empty record
