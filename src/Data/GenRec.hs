@@ -84,6 +84,7 @@ module Data.GenRec
     UnWrap,
     FoldOrdering,
     Lookup,
+    Update,
     Extend, 
     untagField,
     (.=.),
