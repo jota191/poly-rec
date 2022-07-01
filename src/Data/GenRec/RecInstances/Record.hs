@@ -31,13 +31,7 @@ import GHC.TypeLits
 import Data.Kind
 import Data.Proxy
 import Data.GenRec
-
-import Data.Type.Bool
-import Data.Type.Equality
-
-import Data.Singletons
-import Data.Singletons.TH
-import Data.Singletons.TypeLits
+import Data.GenRec.Label
 
 
 -- | * Records
@@ -57,32 +51,32 @@ type instance ShowField Reco       = "field named "
 
 
 type Tagged (l :: Symbol) (v :: Type) = TagField Reco l v
-pattern Tagged :: (KnownSymbol l) => v -> Tagged l v
-pattern Tagged v = TagField Proxy SSym v
+pattern Tagged :: v -> Tagged l v
+pattern Tagged v = TagField Label Label v
 
 
 -- ** Constructors
 
 -- | Pretty Constructor
 infix 4 .==.
-(.==.) :: KnownSymbol l => Label l -> v -> Tagged l v
+(.==.) :: Label l -> v -> Tagged l v
 l .==. v = Tagged v
 
 -- | For the empty Record
 emptyRecord :: Record ('[] :: [(Symbol, Type)])
 emptyRecord = EmptyRec
 
-untag :: (KnownSymbol l) => Tagged l v -> v
+untag :: Tagged l v -> v
 untag (TagField _ _ v) = v
 
 -- * Destructors
 -- | Get a label
-getLabel :: (KnownSymbol l) =>  Tagged l v -> Label l
-getLabel (TagField _ l _) = l
+getLabel :: Tagged l v -> Label l
+getLabel _ = Label
 
 -- | Lookup
 infixl 5 ##
-r ## (l :: Label l) = (#) @Reco r l
+r ## (l :: Label l) = (#) @Reco @l r l
 
 -- | extension
 infixr 2 .**.
@@ -93,8 +87,8 @@ instance ( Show v
          , KnownSymbol l )
   =>
   Show (Tagged l v) where
-  show (TagField _ l v :: TagField Reco l v) =
-    show (fromSing l) ++ " : "++ show v
+  show (Tagged v :: TagField Reco l v) =
+    symbolVal (proxyFrom (Label @l)) ++ " : "++ show v
      where proxyFrom :: Label l -> Proxy l
            proxyFrom _ = Proxy
 
@@ -117,6 +111,40 @@ instance ( Show v
     let ('{':shr) = show r
     in '{' : show lv ++ ", " ++ shr
 
-v1 = (SSym @"boolean" .==. True) .**. emptyRecord
-v2 = (SSym @"integer" .==. 3) .**. v1
-v3 = (SSym @"text" .==. "wa") .**. v2
+
+r =        (Label @"integer" .==. (3 :: Integer))
+     .**.  (Label @"boolean" .==. True)
+     .**.  emptyRecord
+
+
+data Mat
+type Matrix = Rec Mat :: [(Nat, [(Symbol, Type)])] -> Type
+
+type instance  WrapField Mat  (r :: [(Symbol, Type)]) = Record r
+
+-- | Type level show utilities
+type instance ShowRec Mat         = "Matrix"
+type instance ShowField Mat       = "record named "
+
+type TaggedRecord (l :: Nat) (r :: [(Symbol, Type)]) = TagField Mat l r
+pattern TaggedRecord :: forall l r. Record r -> TaggedRecord l r
+pattern TaggedRecord r = TagField Label Label r
+
+
+instance OrdType Nat where
+  type Cmp (m :: Nat) (n :: Nat) = CmpNat m n
+
+
+--m = TaggedRecord @1 r .*. TaggedRecord @2 emptyRecord .*. EmptyRec 
+
+--m = (TagField @Mat (l::Nat) (r :: [(Symbol, Type)]))
+
+m = let tf = (TagField :: forall l r . -- (l::Nat) (r :: [(Symbol, Type)]).
+               Label Mat -> Label l -> Record r -> TagField Mat l r)
+    in      tf Label (Label @1) r
+       .*.  tf Label (Label @2) emptyRecord
+       .*.  EmptyRec
+
+-- m' =        TagField @Mat (Label @Mat) (Label @1) r
+--        .*.  TagField (Label @Mat) (Label @2) (EmptyRec :: Record ('[] :: [(Symbol, Type)]))
+--        .*.  EmptyRec

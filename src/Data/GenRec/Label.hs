@@ -13,12 +13,17 @@ Portability : POSIX
 
 module Data.GenRec.Label where
 import Data.Proxy
-import Data.Singletons
 
-type Label l = Sing l
+data Label l = Label
 
 sndLabel :: Label '(a,b) -> Label b
 sndLabel _ = undefined
 
 fstLabel :: Label '(a,b) -> Label a
 fstLabel _ = undefined
+
+labelFromType :: a -> Label a
+labelFromType _ = Label
+
+proxyToLabel :: Proxy a -> Label a
+proxyToLabel _ = Label
